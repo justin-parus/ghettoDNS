@@ -3,14 +3,16 @@
 
 # pulls public ip and emails it using gmail
 # will need to change google security settings allowing 'less secure apps' to sign in
-#   even when using the SSL port
 
 import requests
 import smtplib
-fromaddr = 'justin.parus@gmail.com'
-toaddrs  = 'justin.parus@gmail.com'
+
+fromaddr = ''
+toaddrs  = ['recipient_1', 'recipient_2']
 subject  = 'ghettoDNS public IP'
-username = 'justin.parus'
+
+# login credentials
+username = ''
 password = ''
 
 # Retrieve public ip and print
@@ -19,16 +21,21 @@ ip = requests.get('https://api.ipify.org').text
 print('Public IP ' + ip)
 
 # Set up message
+recipients = ''
+for x in toaddrs:
+  recipients += x + ','
+
 msg = msg = "\r\n".join([
   "From: " + fromaddr,
-  "To: " + toaddrs,
+  "To: " + recipients,
   "Subject: " + subject,
   "",
   ip
   ])
 
-server = smtplib.SMTP_SSL('smtp.gmail.com:465')
-server.ehlo() # Optional?.. no this isn't swift
+server = smtplib.SMTP('smtp.gmail.com:587')
+server.ehlo() 
+server.starttls()
 server.login(username,password)
 server.sendmail(fromaddr, toaddrs, msg)
 server.close()
