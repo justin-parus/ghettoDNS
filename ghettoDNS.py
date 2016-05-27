@@ -1,9 +1,6 @@
 # ghettoDNS
 # justin parus
 
-# pulls public ip and emails it using gmail
-# will need to change google security settings allowing 'less secure apps' to sign in
-
 import requests
 import smtplib
 
