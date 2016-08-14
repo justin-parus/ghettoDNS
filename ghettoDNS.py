@@ -3,37 +3,63 @@
 
 import requests
 import smtplib
+import os
+from apscheduler.schedulers.blocking import BlockingScheduler
 
-fromaddr = ''
-toaddrs  = ['recipient_1', 'recipient_2']
-subject  = 'ghettoDNS public IP'
+class GhettoDNS:
+  """Simple DNS Server work-around"""
+  def __init__(self):
+    self.lastIP = ''
 
-# login credentials
-username = ''
-password = ''
+  # static
+  FROMADDR = ''
+  TOADDRS = ['', '']
+  USERNAME = ''
+  PASSWORD = ''
+  MAILSERVERADDR = 'smtp.gmail.com:587'
+  # other options 'http://ident.me', 'http://icanhazip.com'
+  IPSERVERADDR = 'https://api.ipify.org'
 
-# Retrieve public ip and print
-# or can use 'http://ident.me'
-ip = requests.get('https://api.ipify.org').text
-print('Public IP ' + ip)
+  # functions
+  def mailIP(self):
+    # Retrieve public ip and print
+    ip = requests.get(GhettoDNS.IPSERVERADDR).text
 
-# Set up message
-recipients = ''
-for x in toaddrs:
-  recipients += x + ','
+    if self.lastIP != ip:
+      self.lastIP = ip
 
-msg = msg = "\r\n".join([
-  "From: " + fromaddr,
-  "To: " + recipients,
-  "Subject: " + subject,
-  "",
-  ip
-  ])
+      # Set up message
+      subject = 'ghettodns public ip'
+      recipients = ''
+      for x in GhettoDNS.TOADDRS:
+        recipients += x + ','
 
-server = smtplib.SMTP('smtp.gmail.com:587')
-server.ehlo() 
-server.starttls()
-server.login(username,password)
-server.sendmail(fromaddr, toaddrs, msg)
-server.close()
-print('Successfully sent mail')
+      msg = msg = "\r\n".join([
+        "From: " + GhettoDNS.FROMADDR,
+        "To: " + recipients,
+        "Subject: " + subject,
+        "",
+        ip
+        ])
+
+      server = smtplib.SMTP(GhettoDNS.MAILSERVERADDR)
+      server.ehlo() 
+      server.starttls()
+      server.login(GhettoDNS.USERNAME, GhettoDNS.PASSWORD)
+      server.sendmail(GhettoDNS.FROMADDR, GhettoDNS.TOADDRS, msg)
+      server.close()
+
+
+if __name__ == '__main__':
+  dns = GhettoDNS()
+
+  scheduler = BlockingScheduler()
+  scheduler.add_job(dns.mailIP, 'cron', hour='19', minute='0', second='0')
+  print('Press Ctrl+{0} to exit'.format('Break' if os.name == 'nt' else 'C'))
+
+  try:
+    print('Starting scheduler')
+    scheduler.start()
+  except (KeyboardInterrupt, SystemExit):
+    print('Process ended')
+    pass
