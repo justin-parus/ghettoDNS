@@ -12,42 +12,47 @@ class GhettoDNS:
     self.lastIP = ''
 
   # static
-  FROMADDR = ''
-  TOADDRS = ['', '']
-  USERNAME = ''
-  PASSWORD = ''
-  MAILSERVERADDR = 'smtp.gmail.com:587'
+  from_addr = ''
+  to_addrs = ['', '']
+  username = ''
+  password = ''
+  mail_server = 'smtp.gmail.com:587'
   # other options 'http://ident.me', 'http://icanhazip.com'
-  IPSERVERADDR = 'https://api.ipify.org'
+  ip_server = 'https://api.ipify.org'
 
-  # functions
   def mailIP(self):
-    # Retrieve public ip and print
-    ip = requests.get(GhettoDNS.IPSERVERADDR).text
+    try:
+      ip = requests.get(GhettoDNS.ip_server).text
 
-    if self.lastIP != ip:
-      self.lastIP = ip
+      if self.lastIP != ip:
+        self.lastIP = ip
 
-      # Set up message
-      subject = 'ghettodns public ip'
-      recipients = ''
-      for x in GhettoDNS.TOADDRS:
-        recipients += x + ','
+        subject = 'ghettodns public ip'
+        recipients = ''
+        for x in GhettoDNS.to_addrs:
+          recipients += x + ','
 
-      msg = msg = "\r\n".join([
-        "From: " + GhettoDNS.FROMADDR,
-        "To: " + recipients,
-        "Subject: " + subject,
-        "",
-        ip
-        ])
+        msg = msg = "\r\n".join([
+          "From: " + GhettoDNS.from_addr,
+          "To: " + recipients,
+          "Subject: " + subject,
+          "",
+          ip
+          ])
+        
+        server = smtplib.SMTP(GhettoDNS.mail_server)
+        server.ehlo() 
+        server.starttls()
+        server.login(GhettoDNS.username, GhettoDNS.password)
+        server.sendmail(GhettoDNS.from_addr, GhettoDNS.to_addrs, msg)
+        server.close()
+        
+        print('Successfully mailed new IP:', ip)
 
-      server = smtplib.SMTP(GhettoDNS.MAILSERVERADDR)
-      server.ehlo() 
-      server.starttls()
-      server.login(GhettoDNS.USERNAME, GhettoDNS.PASSWORD)
-      server.sendmail(GhettoDNS.FROMADDR, GhettoDNS.TOADDRS, msg)
-      server.close()
+    except requests.exceptions.RequestException as err:
+      print('Failed to get ip:', err)
+    except smtplib.SMTPException as err:
+      print('Failed to send mail:', err)
 
 
 if __name__ == '__main__':
@@ -62,4 +67,3 @@ if __name__ == '__main__':
     scheduler.start()
   except (KeyboardInterrupt, SystemExit):
     print('Process ended')
-    pass
